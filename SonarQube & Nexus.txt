@@ -1,0 +1,150 @@
+What is code quality:
+- is it bug free?
+- is it secure
+- duplications avoided
+- tested properly
+- complex code
+- easy to integrate with others
+
+Peer review  it is manual process
+
+Static code analysis
+tools:
+sonarqube   
+coverity
+raxis
+veracode
+codescene
+white source (mend)
+
+
+Why SonarQube?
+it act as Quality Management Tool
+  - Code Analysis
+  - Test Reports
+  - Cover Coverage
+
+Components of SonarQube:
+SonarQube Server:
+ - Rules
+ - Database
+ - Web Interface
+
+SonarScanner
+it is agent it will run where u r code exists
+ - SourceCode
+
+Instalation:
+1  amazon-linux-extras install java-openjdk11 -y  
+yum install java-11
+
+
+    2  sudo wget -O /etc/yum.repos.d/sonar.repo http://downloads.sourceforge.net/project/sonar-pkg/rpm/sonar.repo
+    3  ls
+    4  sudo yum install sonar -y
+    5  service sonar start
+
+
+    6  cd /
+    7  ls
+    8  cd opt/
+    9  ls
+   10  cd sonar/
+   11  ls
+   12  cd conf/
+   13  ls
+   14  vi sonar.properties
+   15  service sonar stop
+   16  service sonar start
+
+https://updates.jenkins.io/download/plugins/sonar/  Jenkins Plugin for Sonarscanner
+mytoken: 0866fa7e18811f7badbde1e8841cac6484b8a82b
+
+Nexus:
+
+[root@ip-172-31-7-235 init.d]# history
+   
+    7  cd /opt
+    3  sudo yum install java-1.8.0
+    8  sudo wget https://download.sonatype.com/nexus/3/latest-unix.tar.gz
+    9  ls
+   10  tar -xvf latest-unix.tar.gz
+   11  ls
+   12  mv nexus-3.19.1-01 nexus3
+   13  ls
+   14  ls -l
+   15  chown -R ec2-user:ec2-user nexus3 sonatype-work
+   16  ls -l
+   17  cd nexus3/
+   18  ls
+   19  cd bin
+   20  ls
+   21  vi nexus.rc
+   22  ln -s /opt/nexus3/bin/nexus /etc/init.d/nexus
+   23  cd /etc/init.d/
+   24  chkconfig --add nexus
+   25  chkconfig nexus on
+   26  sudo service nexus start
+   27  cat /opt/sonatype-work/nexus3/admin.password
+   28  HISTORY
+   29  history
+[root@ip-172-31-7-235 init.d]#
+
+if Free style project:  update nexus cred in below file
+
+[root@ip-172-31-12-133 nexus]# cd /etc/maven/
+[root@ip-172-31-12-133 maven]# ls
+logging  settings.xml  toolchains.xml
+[root@ip-172-31-12-133 maven]# ls -l settings.xml
+-rw-r--r-- 1 root root 10331 Jul 21 02:41 settings.xml
+[root@ip-172-31-12-133 maven]#
+
+if its pipeline project Nexusartifactuploader pluggin need to install
+and use Syntaxchecker as per pom.xml file
+
+
+
+Your admin user password is located in
+/opt/sonatype-work/nexus3/admin.password 
+
+
+
+pipeline{
+    agent any
+    environment{
+        PATH = "/opt/maven3/bin:$PATH"
+    }
+    stages{
+        stage("Git Checkout"){
+            steps{
+                git credentialsId: 'javahome2', url: 'https://github.com/lakshmiprasad2019/myweb.git'
+            }
+        }
+        stage("Maven Build"){
+            steps{
+                sh "mvn clean sonar:sonar package"
+                
+            }
+        }
+        stage('Upload War To Nexus'){
+            steps{
+                  nexusArtifactUploader artifacts: [
+                       [
+                            artifactId: 'myweb', 
+                            classifier: '', 
+                            file: "target/myweb-8.2.6.war", 
+                            type: 'war'
+                       ]
+                  ], 
+                  credentialsId: 'nexus3', 
+                  groupId: 'in.javahome', 
+                  nexusUrl: '172.31.47.8:8081', 
+                  nexusVersion: 'nexus3', 
+                  protocol: 'http', 
+                  repository: 'myrepo', 
+                  version: '8.2.6'  
+              }
+            }
+    }
+}
+  
